@@ -21,7 +21,7 @@ import scipy.signal
 import glob
 import json
 import sys
-from songbird_data_analysis import Song_functions
+import Song_functions
 
 
 window =('hamming')
@@ -52,7 +52,7 @@ elif rec_system == 'Neuropixel':
     
 print('fs:',fs)
 
-songfile = sys.argv[1]                      # npy file
+songfile = "/Users/celinehosteins/code/Projet/Data_SongSort_M1Bioinfo/Bird1/2022-04-25_14-54-26.npy"                    # npy file
 base_filename = os.path.basename(songfile)  # Extracts filename
 print(songfile)
 rawsong = np.array([])

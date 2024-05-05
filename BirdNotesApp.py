@@ -9,6 +9,26 @@ from scipy.signal import spectrogram
 import numpy as np
 #from remove_silences import split_audio_by_silence
 import os
+import Song_functions
+import json
+import scipy
+
+
+window =('hamming')
+overlap = 64
+nperseg = 1024
+noverlap = nperseg-overlap
+colormap = "jet"
+smooth_win = 10
+
+#IMPORTANT -> Threshold params
+parameters      =   json.load(open('parameters.json'))
+threshold       =   parameters['threshold']
+min_syl_dur     =   parameters['min_syl_dur']
+min_silent_dur  =   parameters['min_silent_dur']
+
+#rec_system = 'Alpha_omega' # or 'Neuralynx' or 'Other'
+rec_system =  parameters['rec_system']
 
 
 customtkinter.set_appearance_mode("System")
@@ -127,11 +147,12 @@ class App(customtkinter.CTk):
                 self.display_spectrogram(example_file)
 """
 
-    #fonction pour récupérer le fichier audio
+
+    #fonction pour récupérer le fichier audio /demander type de fichier d'abord
     def fetch_audio_file(self):
-        file_path = tkinter.filedialog.askopenfilename(filetypes=[("Audio Files", "*.wav")])
+        file_path = tkinter.filedialog.askopenfilename(filetypes=[("Audio Files", "*.wav"), ("Numpy Files", "*.npy")])
         if file_path:
-            self.display_spectrogram(file_path)
+            self.display_smooth_amplitude_plot(file_path)
 
     #fonction pour afficher le spectrogramme
     def display_spectrogram(self, file_path):
@@ -161,6 +182,76 @@ class App(customtkinter.CTk):
         
         # Bind left-click event to the spectrogram (simulate double-click)
         canvas.mpl_connect('button_press_event', lambda event: self.on_spectrogram_double_click(event, file_path))
+
+
+    def display_smooth_amplitude_plot(self, file_path):
+        if file_path.endswith('.npy'):
+            # Chargez les données à partir du fichier npy
+            self.audio_data = np.load(file_path)
+            self.audio_data = self.audio_data.astype(float)
+            self.audio_data = self.audio_data.flatten()
+        else:
+            # Chargez le fichier audio WAV
+            self.sample_rate, self.audio_data = wavfile.read(file_path)
+
+        if rec_system == 'Alpha_omega':
+            fs = 22321.4283
+        elif rec_system == 'Neuralynx':
+            fs = 32000
+        elif rec_system == 'Neuropixel':
+            fs = 32723.037368
+
+        start = int(parameters['start_pos'] * fs)
+        end =  start + (int(parameters['display_duration']*fs))
+        self.audio_data = self.audio_data[start:end]
+
+        # Calculer le signal d'amplitude lissé
+        amp = Song_functions.smooth_data(self.audio_data, fs, freq_cutoffs=(1000, 8000))
+
+        (onsets, offsets) = Song_functions.segment_song(amp, segment_params={'threshold': threshold, 'min_syl_dur': min_syl_dur, 'min_silent_dur': min_silent_dur}, samp_freq=fs)
+        shpe = len(onsets)
+
+        fig_width = self.spectrogram_canvas.winfo_width() / 100  # Convertir en pouces
+        fig_height = self.spectrogram_canvas.winfo_height() / 100 # Convertir en pouces
+
+        # Créer une nouvelle figure
+        fig, ax2 = plt.subplots(figsize=(fig_width, fig_height))
+
+        x_amp = np.arange(len(amp))
+
+        # Plots spectrogram
+        (f, t, sp) = scipy.signal.spectrogram(self.audio_data, fs, window, nperseg, noverlap, mode='complex')
+        #ax3.imshow(10 * np.log10(np.square(abs(sp))), origin="lower", aspect="auto", interpolation="none", vmin=parameters['vmin'], vmax=parameters['vmax'])
+
+        ax2.plot((x_amp / x_amp[-1]) * len(t), amp, color='black')
+        ax2.set_xlim([0, len(t)])
+        ax2.axhline(y=threshold, color='g')
+
+        for i in range(0, shpe):
+            ax2.axvline(x=onsets[i] * len(t) / x_amp[-1], alpha=0.2)
+            ax2.axvline(x=offsets[i] * len(t) / x_amp[-1], color='r', alpha=0.2)
+
+        ax2.set_title('Smoothed Amplitude of the Song')
+        ax2.set_ylabel('Amplitude')
+        ax2.set_xlabel('Time (s)')
+
+
+        # Incorporer la figure dans le widget Canvas
+        canvas = FigureCanvasTkAgg(fig, master=self.spectrogram_canvas)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+
+        # Ajouter la ligne horizontale pour le seuil
+        ax2.axhline(y=threshold, color='green')
+
+        self.ax = ax2  # Store ax for accessing later
+
+        canvas.mpl_connect('button_press_event', lambda event: self.on_spectrogram_double_click(event, file_path))
+
+        # Afficher la figure
+        #plt.show()
+
+
 
     #fonction pour ajouter des annotations au boucle clic sur le spectrogramme (suivi d'un simple clic pour terminer l'annotation)
     def on_spectrogram_double_click(self, event, file_path):
@@ -222,7 +313,7 @@ class App(customtkinter.CTk):
     #fonction pour enregistrer les annotations
     def save_annotations(self):
         #save dans csv
-        annotation_file_path = tk.filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Excel Files", "*.csv")])
+        annotation_file_path = tk.filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text Files", "*.txt"), ("CSV Files", "*.csv")])
         if annotation_file_path:
             with open(annotation_file_path, "w") as f:
                 # Write headers
