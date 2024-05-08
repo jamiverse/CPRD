@@ -1,5 +1,5 @@
 # CPRD
-J'ai rajouté ça au débuts de la fonction display_smooth_amplitude_plot :
+Pour pouvoir traiter plusieurs fichier à la suite j'ai rajouté ça au débuts de la fonction display_smooth_amplitude_plot :
 
         self.spectrogram_canvas.destroy()
         self.spectrogram_canvas = customtkinter.CTkFrame(self, width=960, height=250, corner_radius=0, border_width=1, border_color="black")
@@ -8,4 +8,4 @@ J'ai rajouté ça au débuts de la fonction display_smooth_amplitude_plot :
         self.spectrogram_canvas.update()
         
 En gros ça détruit la frame ou se trouve le spectrogramme puis la recrée mais vierge puis la fonction redessine par dessus
-(c'était tarpin dur de tyrouver comment faire mon QI fais la température de la pièce)
+(c'était tarpin dur de trouver comment faire mon QI fais la température de la pièce)
