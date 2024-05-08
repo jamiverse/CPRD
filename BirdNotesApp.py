@@ -15,6 +15,8 @@ import subprocess
 import glob
 import shutil
 import Song_functions
+import convert_wav_to_npy
+
 
 
 customtkinter.set_appearance_mode("System")
@@ -59,7 +61,7 @@ class App(customtkinter.CTk):
         self.sidebar_button_2 = customtkinter.CTkButton(self.sidebar_frame, command=self.save_annotations, text="Save annotations")
         self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=10)
 
-        self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, command=lambda: self.split_silences('/Users/jadegoupil/Desktop/Programming/S2/Projet_oiseaux'), text="Clean audio files")
+        self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, command=lambda: self.split_silences(os.path.dirname(os.path.abspath(__file__))), text="Clean audio files")
         self.sidebar_button_3.grid(row=4, column=0, padx=20, pady=10)
 
         
@@ -122,6 +124,7 @@ class App(customtkinter.CTk):
 ############################################################################################################
 
     def split_silences(self, folder_path):
+        print('Splitting silences...')
         window =('hamming')
         overlap = 64
         nperseg = 1024
@@ -143,7 +146,6 @@ class App(customtkinter.CTk):
         #rec_system = 'Alpha_omega' # or 'Neuralynx' or 'Other'
         rec_system = parameters['rec_system']
 
-        ''''''
 
         folder_name = folder_path
         if os.path.isdir(folder_name) is False:
@@ -208,6 +210,8 @@ class App(customtkinter.CTk):
             else:
                 file_path_target_clean = target_path_clean+'/'+base_filename
                 shutil.copy2(songfile, file_path_target_clean)
+
+            print("All files processed.")
 
 
     
@@ -360,3 +364,4 @@ class App(customtkinter.CTk):
 if __name__ == "__main__":
     app = App()
     app.mainloop()
+
