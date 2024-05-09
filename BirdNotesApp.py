@@ -15,7 +15,7 @@ import subprocess
 import glob
 import shutil
 import Song_functions
-import convert_wav_to_npy
+
 
 
 
@@ -61,6 +61,7 @@ class App(customtkinter.CTk):
         self.sidebar_button_2 = customtkinter.CTkButton(self.sidebar_frame, command=self.save_annotations, text="Save annotations")
         self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=10)
 
+        # Bouton pour séparer les silences (path = current directory) il faut que le dossier source (Raw_songs) soit dans le même dossier que le code
         self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, command=lambda: self.split_silences(os.path.dirname(os.path.abspath(__file__))), text="Clean audio files")
         self.sidebar_button_3.grid(row=4, column=0, padx=20, pady=10)
 
@@ -121,7 +122,6 @@ class App(customtkinter.CTk):
         #self.bind("<Control-z>", self.undo_annotation)
         #self.bind("<Command-z>", self.undo_annotation)
 
-############################################################################################################
 
     def split_silences(self, folder_path):
         print('Splitting silences...')
@@ -215,8 +215,6 @@ class App(customtkinter.CTk):
 
 
     
-
-    ########################################################
 
     #fonction pour récupérer le fichier audio
     def fetch_audio_file(self):
