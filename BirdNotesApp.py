@@ -7,7 +7,6 @@ from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
 from scipy.io import wavfile
 from scipy.signal import spectrogram
 import numpy as np
-#from remove_silences import split_audio_by_silence
 import os
 import json
 import sys
