@@ -4,31 +4,19 @@ import customtkinter
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
+import scipy
 from scipy.io import wavfile
 from scipy.signal import spectrogram
 import numpy as np
-#from remove_silences import split_audio_by_silence
 import os
-import Song_functions
 import json
-import scipy
+import sys
+import subprocess
+import glob
+import shutil
+# Si Song_fucntions est dans le même dossier, sinon il faut modifier en import Song_functions from ""
+import Song_functions
 
-
-window =('hamming')
-overlap = 64
-nperseg = 1024
-noverlap = nperseg-overlap
-colormap = "jet"
-smooth_win = 10
-
-#IMPORTANT -> Threshold params
-parameters      =   json.load(open('parameters.json'))
-threshold       =   parameters['threshold']
-min_syl_dur     =   parameters['min_syl_dur']
-min_silent_dur  =   parameters['min_silent_dur']
-
-#rec_system = 'Alpha_omega' # or 'Neuralynx' or 'Other'
-rec_system =  parameters['rec_system']
 
 
 customtkinter.set_appearance_mode("System")
@@ -72,6 +60,11 @@ class App(customtkinter.CTk):
        
         self.sidebar_button_2 = customtkinter.CTkButton(self.sidebar_frame, command=self.save_annotations, text="Save annotations")
         self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=10)
+
+        # Bouton pour séparer les silences (path = current directory) il faut que le dossier source (Raw_songs) soit dans le même dossier que le code
+        self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, command=lambda: self.split_silences(os.path.dirname(os.path.abspath(__file__))), text="Clean audio files")
+        self.sidebar_button_3.grid(row=4, column=0, padx=20, pady=10)
+
         
         #label des boutons
         self.appearance_mode_label = customtkinter.CTkLabel(self.sidebar_frame, text="Appearance Mode:", anchor="w")
@@ -122,8 +115,6 @@ class App(customtkinter.CTk):
         self.sample_rate = None
 
         # bouton pour déclencher la fonction de division des enregistrements (à implémenter)
-        self.split_audio_button = customtkinter.CTkButton(self.sidebar_frame, text="Split Silences") #pas encore rééllement implémenté
-        self.split_audio_button.grid(row=4, column=0, padx=20, pady=10)
 
         self.last_added_annotation = None
 
@@ -131,21 +122,99 @@ class App(customtkinter.CTk):
         #self.bind("<Control-z>", self.undo_annotation)
         #self.bind("<Command-z>", self.undo_annotation)
 
-    """Fonction pour diviser les enregistrements en supprimant les segments de silence.
-    def split_audio(self):
-        # Récupérer le fichier audio
-        threshold = tk.simpledialog.askfloat("Amplitude Threshold", "Enter Amplitude Threshold:")
-        file_path = tkinter.filedialog.askopenfilename(filetypes=[("Audio Files", "*.wav")])
-        if file_path:
-            # Diviser les enregistrements par suppression des segments de silence
-            output_dir = split_audio_by_silence(file_path, threshold)
-            # Informer l'utilisateur que l'audio a été divisé avec succès
-            tk.messagebox.showinfo("Audio Split", "Audio has been split successfully.")
-            # Afficher le spectrogramme mis à jour en utilisant un des fichiers découpés comme exemple
-            if output_dir:
-                example_file = os.path.join(output_dir, os.listdir(output_dir)[0])
-                self.display_spectrogram(example_file)
-"""
+
+    def split_silences(self, folder_path):
+        print('Splitting silences...')
+        window =('hamming')
+        overlap = 64
+        nperseg = 1024
+        noverlap = nperseg-overlap
+        colormap = "jet"
+        smooth_win = 10
+
+        #IMPORTANT -> Threshold params
+        parameters      =   json.load(open('parameters.json'))
+        threshold       =   parameters['threshold']
+        min_syl_dur     =   parameters['min_syl_dur']
+        min_silent_dur  =   parameters['min_silent_dur']
+
+        #Contains the labels of the syllables from a single .wav file
+        labels = []
+        syl_counter=0
+        Nb_syls=0
+        keep_song =''
+        #rec_system = 'Alpha_omega' # or 'Neuralynx' or 'Other'
+        rec_system = parameters['rec_system']
+
+
+        folder_name = folder_path
+        if os.path.isdir(folder_name) is False:
+            raise ValueError("Not a folder.")
+
+        print(folder_name)
+        source_path = folder_name + '/Raw_songs'
+        target_path_noise = folder_name + '/No_songs'
+        target_path_clean = folder_name + '/Clean_songs'
+        if not os.path.exists(source_path):
+            raise ValueError('Raw_songs folder does not exist.')
+        if not os.path.exists(target_path_noise):
+            os.mkdir(target_path_noise)
+            print('Created folder No_songs.')
+        if not os.path.exists(target_path_clean):
+            os.mkdir(target_path_clean)
+            print('Created folder Clean.')
+
+        filetype = '.wav' # '.txt'
+        if rec_system == 'Alpha_omega':
+            fs = 22321.4283
+        elif rec_system == 'Neuralynx':
+            fs = 32000
+        elif rec_system == 'Neuropixel':
+            fs = 32723.037368
+            
+        print('fs:',fs)
+        songfiles_list = glob.glob(source_path + '/*' + filetype)
+        lsl = len(songfiles_list)
+
+        for file_num, songfile in enumerate(songfiles_list):
+            print('File no:', file_num, 'from ', lsl)
+            base_filename = os.path.basename(songfile)
+            
+            #Read song file
+            print('File name: %s' % songfile)
+            if filetype == '.txt':
+                rawsong = np.loadtxt(songfile)
+            elif filetype == '.npy':
+                rawsong = np.load(songfile)
+            elif filetype == '.wav':
+                fs, rawsong = wavfile.read(songfile)
+
+            
+            #Bandpass filter, square and lowpass filter
+            #cutoffs : 1000, 8000
+            try:
+                amp = Song_functions.smooth_data(rawsong,fs,freq_cutoffs=(1000, 8000))
+            except ValueError:
+                print('Moving file to noise because length of rawsong is not greater than padlen.')
+                file_path_target_noise = target_path_noise+'/'+base_filename
+                os.rename(songfile, file_path_target_noise)
+                continue
+
+            
+            #Segment song
+            (onsets, offsets) = Song_functions.segment_song(amp,segment_params={'threshold': threshold, 'min_syl_dur': min_syl_dur, 'min_silent_dur': min_silent_dur},samp_freq=fs)
+            shpe = len(onsets)
+            if shpe < 1:
+                file_path_target_noise = target_path_noise+'/'+base_filename
+                shutil.copy2(songfile, file_path_target_noise)
+            else:
+                file_path_target_clean = target_path_clean+'/'+base_filename
+                shutil.copy2(songfile, file_path_target_clean)
+
+            print("All files processed.")
+
+
+    
 
 
     #fonction pour récupérer le fichier audio /demander type de fichier d'abord
@@ -364,3 +433,4 @@ class App(customtkinter.CTk):
 if __name__ == "__main__":
     app = App()
     app.mainloop()
+
