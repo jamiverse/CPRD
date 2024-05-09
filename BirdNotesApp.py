@@ -41,7 +41,6 @@ keep_song =''
 rec_system = parameters['rec_system']
 
 
-
 customtkinter.set_appearance_mode("System")
 customtkinter.set_default_color_theme("dark-blue")
 customtkinter.set_widget_scaling(1.0) #permets de régler la taille des widgets
