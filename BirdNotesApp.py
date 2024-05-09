@@ -14,6 +14,7 @@ import sys
 import subprocess
 import glob
 import shutil
+# Si Song_fucntions est dans le même dossier, sinon il faut modifier en import Song_functions from ""
 import Song_functions
 
 
