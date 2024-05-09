@@ -18,6 +18,28 @@ import shutil
 import Song_functions
 
 
+window =('hamming')
+overlap = 64
+nperseg = 1024
+noverlap = nperseg-overlap
+colormap = "jet"
+smooth_win = 10
+
+
+#IMPORTANT -> Threshold params
+parameters      =   json.load(open('parameters.json'))
+threshold       =   parameters['threshold']
+min_syl_dur     =   parameters['min_syl_dur']
+min_silent_dur  =   parameters['min_silent_dur']
+
+#Contains the labels of the syllables from a single .wav file
+labels = []
+syl_counter=0
+Nb_syls=0
+keep_song =''
+#rec_system = 'Alpha_omega' # or 'Neuralynx' or 'Other'
+rec_system = parameters['rec_system']
+
 
 customtkinter.set_appearance_mode("System")
 customtkinter.set_default_color_theme("dark-blue")
@@ -62,7 +84,7 @@ class App(customtkinter.CTk):
         self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=10)
 
         # Bouton pour séparer les silences (path = current directory) il faut que le dossier source (Raw_songs) soit dans le même dossier que le code
-        self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, command=lambda: self.split_silences(os.path.dirname(os.path.abspath(__file__))), text="Clean audio files")
+        self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, command=lambda: self.split_silences(os.path.dirname(os.path.abspath(__file__)), ".wav"), text="Clean audio files")
         self.sidebar_button_3.grid(row=4, column=0, padx=20, pady=10)
 
         
@@ -123,7 +145,7 @@ class App(customtkinter.CTk):
         #self.bind("<Command-z>", self.undo_annotation)
 
 
-    def split_silences(self, folder_path):
+    def split_silences(self, folder_path, filetype='.npy'):
         print('Splitting silences...')
         window =('hamming')
         overlap = 64
@@ -164,7 +186,7 @@ class App(customtkinter.CTk):
             os.mkdir(target_path_clean)
             print('Created folder Clean.')
 
-        filetype = '.wav' # '.txt'
+
         if rec_system == 'Alpha_omega':
             fs = 22321.4283
         elif rec_system == 'Neuralynx':
@@ -175,11 +197,12 @@ class App(customtkinter.CTk):
         print('fs:',fs)
         songfiles_list = glob.glob(source_path + '/*' + filetype)
         lsl = len(songfiles_list)
+        print('Number of files:', lsl)
 
         for file_num, songfile in enumerate(songfiles_list):
             print('File no:', file_num, 'from ', lsl)
             base_filename = os.path.basename(songfile)
-            
+
             #Read song file
             print('File name: %s' % songfile)
             if filetype == '.txt':
@@ -254,11 +277,6 @@ class App(customtkinter.CTk):
 
 
     def display_smooth_amplitude_plot(self, file_path):
-        self.spectrogram_canvas.destroy()
-        self.spectrogram_canvas = customtkinter.CTkFrame(self, width=960, height=250, corner_radius=0, border_width=1, border_color="black")
-        self.spectrogram_canvas.grid(row=0, column=1, padx=(20, 10), pady=(20, 0), sticky="nsew")
-        self.spectrogram_canvas.grid_columnconfigure(1, weight=1)
-        self.spectrogram_canvas.update()
         if file_path.endswith('.npy'):
             # Chargez les données à partir du fichier npy
             self.audio_data = np.load(file_path)
