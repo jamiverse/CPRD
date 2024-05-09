@@ -1,0 +1,14 @@
+Modifications effectuées (flemme de faire un commit de 3km de long) :
+- Possibilité d'ouvrir des fichiers .wav et .npy (fonction fetch_files)
+
+- Ajout de la grosse fonction display_smooth_amplitude qui permet à la fois de process les fichiers npy et de les afficher avec leurs annotations, idem pour .wav (qui ont pas d'annotations donc juste le signal lissé)
+==> Comme j'ai repris la logique de Auxilliary_Support, on a donc un affichage d'un intervalle de temps donné (lignes 204-206)
+En gros, la fonction récupère les infos de parameters.json et également quelques fonctions de Song_functions.py pour afficher les annotations (lignes 208-209) donc pour tester le script il faut s'assurer de bien avoir les fichiers dans votre directory
+
+Pour tester, essayez surtout avec 2022-04-25_13-00-50.npy qui affiche un truc sympa, les autres sont pas ouf je comprends pas trop pourquoi mais je suppose que c'est normal parce que ça affiche exactement la même chose avec leur script de base. 
+
+
+- Ajout de la possibilité d'enregistrer les annotations en .csv ou en .txt (ligne 316)
+
+
+NB: je laisse la fonction display_spectrogram pour l'instant au cas où on en aurait besoin plus tard (même si je pense pas trop)
