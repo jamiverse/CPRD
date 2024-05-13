@@ -148,8 +148,6 @@ class App(customtkinter.CTk):
         #self.bind("<Control-z>", self.undo_annotation)
         #self.bind("<Command-z>", self.undo_annotation)
 
-
-
     def split_silences(self):
         if self.fetched_audio_file_path is None:
             print("No audio file fetched. Please fetch an audio file first.")
@@ -157,6 +155,7 @@ class App(customtkinter.CTk):
         else:
             print("Splitting silences for:", self.fetched_audio_file_path)
             file_path = self.fetched_audio_file_path
+            file_name = os.path.splitext(os.path.basename(file_path))[0]
             file_extension = os.path.splitext(file_path)[1]
 
             # Check if the file exists
@@ -186,39 +185,47 @@ class App(customtkinter.CTk):
 
             (onsets, offsets) = Song_functions.segment_song(amp, segment_params={'threshold': threshold, 'min_syl_dur': min_syl_dur, 'min_silent_dur': min_silent_dur}, samp_freq=fs)
         
-            # Create a directory to save non-silent chunks
-            output_dir = os.path.join(os.path.dirname(file_path), "NonSilentChunks")
-            os.makedirs(output_dir, exist_ok=True)
-
-            # List to store non-silent chunks
-            non_silent_chunks = []
-
-            # Iterate over the detected syllables and save non-silent chunks
-            for i, (onset, offset) in enumerate(zip(onsets, offsets)):
-                # Extract the non-silent chunk
-                non_silent_chunk = audio_data[onset:offset]
-
-                # Add the non-silent chunk to the list
-                non_silent_chunks.append(non_silent_chunk)
-
-                # Save the non-silent chunk as a new audio file
-                output_file_path = os.path.join(output_dir, f"NonSilentChunk_{i}.wav")
-                wavfile.write(output_file_path, sample_rate, non_silent_chunk)
-
-            # Concatenate non-silent chunks into one audio segment
-            concatenated_audio = AudioSegment.silent(duration=0)  # Start with silent audio segment
-            for chunk in non_silent_chunks:
-                audio_segment = AudioSegment(chunk.tobytes(), frame_rate=sample_rate, sample_width=chunk.dtype.itemsize, channels=1)
-                concatenated_audio += audio_segment
-
-            # Save the concatenated audio as a WAV file
-            output_file_path = os.path.join(os.path.dirname(file_path), "combined_non_silent_chunks.wav")
-            print("File stored at:", output_file_path)
-            concatenated_audio.export(output_file_path, format="wav")
-
-            print("Silences removed from song.")
             
+        # Create a directory to save non-silent chunks
+        output_dir = os.path.join(os.path.dirname(file_path), f"{file_name}_NonSilentChunks")
+        os.makedirs(output_dir, exist_ok=True)
 
+        # List to store non-silent chunks
+        non_silent_chunks = []
+
+        # Iterate over the detected syllables and save non-silent chunks
+        for i, (onset, offset) in enumerate(zip(onsets, offsets)):
+            # Extract the non-silent chunk
+            non_silent_chunk = audio_data[onset:offset]
+
+            # Add the non-silent chunk to the list
+            non_silent_chunks.append(non_silent_chunk)
+
+            # Save the non-silent chunk as a new audio file
+            output_file_path = os.path.join(output_dir, f"NonSilentChunk_{i}.{file_extension[1:]}")
+            if file_extension == ".wav":
+                wavfile.write(output_file_path, sample_rate, non_silent_chunk)
+            else:
+                np.save(output_file_path, non_silent_chunk)
+
+        # Concatenate non-silent chunks into one audio segment
+        concatenated_audio = AudioSegment.silent(duration=0)  # Start with silent audio segment
+        for chunk in non_silent_chunks:
+            if file_extension == ".wav":
+                audio_segment = AudioSegment(chunk.tobytes(), frame_rate=sample_rate, sample_width=chunk.dtype.itemsize, channels=1)
+            elif file_extension == ".npy":
+                # Assuming the sample width is 16 bits for npy files
+                audio_segment = AudioSegment(chunk.astype(np.int16).tobytes(), frame_rate=int(fs), sample_width=2, channels=1)
+            concatenated_audio += audio_segment
+
+        # Save the concatenated audio as either a WAV or NPY file
+        output_file_path = os.path.join(os.path.dirname(file_path), f"{file_name}_clean.{file_extension[1:]}")
+        if file_extension == ".wav":
+            concatenated_audio.export(output_file_path, format="wav")
+            print("Clean file stored at:", output_file_path)
+        else:
+            np.save(output_file_path, np.concatenate(non_silent_chunks))
+            print("Clean file stored at:", output_file_path)
 
 
     #fonction pour récupérer le fichier audio /demander type de fichier d'abord
@@ -440,4 +447,3 @@ class App(customtkinter.CTk):
 if __name__ == "__main__":
     app = App()
     app.mainloop()
-
