@@ -10,8 +10,9 @@ from scipy.signal import spectrogram
 import numpy as np
 import os
 import json
+import pydub
 import sys
-import subprocess
+from pydub import AudioSegment
 import glob
 import shutil
 # Si Song_fucntions est dans le même dossier, sinon il faut modifier en import Song_functions from ""
@@ -41,6 +42,7 @@ keep_song =''
 rec_system = parameters['rec_system']
 
 
+
 customtkinter.set_appearance_mode("System")
 customtkinter.set_default_color_theme("dark-blue")
 customtkinter.set_widget_scaling(1.0) #permets de régler la taille des widgets
@@ -48,6 +50,8 @@ customtkinter.set_widget_scaling(1.0) #permets de régler la taille des widgets
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
+
+        self.fetched_audio_file_path = None
 
         # configure window
         self.title("Bird Song Recognition")
@@ -84,7 +88,7 @@ class App(customtkinter.CTk):
         self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=10)
 
         # Bouton pour séparer les silences (path = current directory) il faut que le dossier source (Raw_songs) soit dans le même dossier que le code
-        self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, command=lambda: self.split_silences(os.path.dirname(os.path.abspath(__file__)), ".wav"), text="Clean audio files")
+        self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, command=self.split_silences, text="Clean audio file")        
         self.sidebar_button_3.grid(row=4, column=0, padx=20, pady=10)
 
         
@@ -145,105 +149,83 @@ class App(customtkinter.CTk):
         #self.bind("<Command-z>", self.undo_annotation)
 
 
-    def split_silences(self, folder_path, filetype='.npy'):
-        print('Splitting silences...')
-        window =('hamming')
-        overlap = 64
-        nperseg = 1024
-        noverlap = nperseg-overlap
-        colormap = "jet"
-        smooth_win = 10
 
-        #IMPORTANT -> Threshold params
-        parameters      =   json.load(open('parameters.json'))
-        threshold       =   parameters['threshold']
-        min_syl_dur     =   parameters['min_syl_dur']
-        min_silent_dur  =   parameters['min_silent_dur']
+    def split_silences(self):
+        if self.fetched_audio_file_path is None:
+            print("No audio file fetched. Please fetch an audio file first.")
+            return
+        else:
+            print("Splitting silences for:", self.fetched_audio_file_path)
+            file_path = self.fetched_audio_file_path
+            file_extension = os.path.splitext(file_path)[1]
 
-        #Contains the labels of the syllables from a single .wav file
-        labels = []
-        syl_counter=0
-        Nb_syls=0
-        keep_song =''
-        #rec_system = 'Alpha_omega' # or 'Neuralynx' or 'Other'
-        rec_system = parameters['rec_system']
+            # Check if the file exists
+            if not os.path.exists(file_path):
+                print("File not found:", file_path)
+                return
 
+            # Check if the file extension is supported
+            if file_extension not in [".wav", ".npy"]:
+                print("Unsupported file extension:", file_extension)
+                return
 
-        folder_name = folder_path
-        if os.path.isdir(folder_name) is False:
-            raise ValueError("Not a folder.")
+            # Load the audio file
+            if file_extension == ".wav":
+                sample_rate, audio_data = wavfile.read(file_path)
+            else:  # Assuming .npy file extension
+                audio_data = np.load(file_path)
 
-        print(folder_name)
-        source_path = folder_name + '/Raw_songs'
-        target_path_noise = folder_name + '/No_songs'
-        target_path_clean = folder_name + '/Clean_songs'
-        if not os.path.exists(source_path):
-            raise ValueError('Raw_songs folder does not exist.')
-        if not os.path.exists(target_path_noise):
-            os.mkdir(target_path_noise)
-            print('Created folder No_songs.')
-        if not os.path.exists(target_path_clean):
-            os.mkdir(target_path_clean)
-            print('Created folder Clean.')
+            if rec_system == 'Alpha_omega':
+                fs = 22321.4283
+            elif rec_system == 'Neuralynx':
+                fs = 32000
+            elif rec_system == 'Neuropixel':
+                fs = 32723.037368
 
+            amp = Song_functions.smooth_data(self.audio_data, fs, freq_cutoffs=(1000, 8000))
 
-        if rec_system == 'Alpha_omega':
-            fs = 22321.4283
-        elif rec_system == 'Neuralynx':
-            fs = 32000
-        elif rec_system == 'Neuropixel':
-            fs = 32723.037368
+            (onsets, offsets) = Song_functions.segment_song(amp, segment_params={'threshold': threshold, 'min_syl_dur': min_syl_dur, 'min_silent_dur': min_silent_dur}, samp_freq=fs)
+        
+            # Create a directory to save non-silent chunks
+            output_dir = os.path.join(os.path.dirname(file_path), "NonSilentChunks")
+            os.makedirs(output_dir, exist_ok=True)
+
+            # List to store non-silent chunks
+            non_silent_chunks = []
+
+            # Iterate over the detected syllables and save non-silent chunks
+            for i, (onset, offset) in enumerate(zip(onsets, offsets)):
+                # Extract the non-silent chunk
+                non_silent_chunk = audio_data[onset:offset]
+
+                # Add the non-silent chunk to the list
+                non_silent_chunks.append(non_silent_chunk)
+
+                # Save the non-silent chunk as a new audio file
+                output_file_path = os.path.join(output_dir, f"NonSilentChunk_{i}.wav")
+                wavfile.write(output_file_path, sample_rate, non_silent_chunk)
+
+            # Concatenate non-silent chunks into one audio segment
+            concatenated_audio = AudioSegment.silent(duration=0)  # Start with silent audio segment
+            for chunk in non_silent_chunks:
+                audio_segment = AudioSegment(chunk.tobytes(), frame_rate=sample_rate, sample_width=chunk.dtype.itemsize, channels=1)
+                concatenated_audio += audio_segment
+
+            # Save the concatenated audio as a WAV file
+            output_file_path = os.path.join(os.path.dirname(file_path), "combined_non_silent_chunks.wav")
+            print("File stored at:", output_file_path)
+            concatenated_audio.export(output_file_path, format="wav")
+
+            print("Silences removed from song.")
             
-        print('fs:',fs)
-        songfiles_list = glob.glob(source_path + '/*' + filetype)
-        lsl = len(songfiles_list)
-        print('Number of files:', lsl)
 
-        for file_num, songfile in enumerate(songfiles_list):
-            print('File no:', file_num, 'from ', lsl)
-            base_filename = os.path.basename(songfile)
-
-            #Read song file
-            print('File name: %s' % songfile)
-            if filetype == '.txt':
-                rawsong = np.loadtxt(songfile)
-            elif filetype == '.npy':
-                rawsong = np.load(songfile)
-            elif filetype == '.wav':
-                fs, rawsong = wavfile.read(songfile)
-
-            
-            #Bandpass filter, square and lowpass filter
-            #cutoffs : 1000, 8000
-            try:
-                amp = Song_functions.smooth_data(rawsong,fs,freq_cutoffs=(1000, 8000))
-            except ValueError:
-                print('Moving file to noise because length of rawsong is not greater than padlen.')
-                file_path_target_noise = target_path_noise+'/'+base_filename
-                os.rename(songfile, file_path_target_noise)
-                continue
-
-            
-            #Segment song
-            (onsets, offsets) = Song_functions.segment_song(amp,segment_params={'threshold': threshold, 'min_syl_dur': min_syl_dur, 'min_silent_dur': min_silent_dur},samp_freq=fs)
-            shpe = len(onsets)
-            if shpe < 1:
-                file_path_target_noise = target_path_noise+'/'+base_filename
-                shutil.copy2(songfile, file_path_target_noise)
-            else:
-                file_path_target_clean = target_path_clean+'/'+base_filename
-                shutil.copy2(songfile, file_path_target_clean)
-
-            print("All files processed.")
-
-
-    
 
 
     #fonction pour récupérer le fichier audio /demander type de fichier d'abord
     def fetch_audio_file(self):
         file_path = tkinter.filedialog.askopenfilename(filetypes=[("Audio Files", "*.wav"), ("Numpy Files", "*.npy")])
         if file_path:
+            self.fetched_audio_file_path = file_path
             self.display_smooth_amplitude_plot(file_path)
 
     #fonction pour afficher le spectrogramme
@@ -339,6 +321,8 @@ class App(customtkinter.CTk):
         self.ax = ax2  # Store ax for accessing later
 
         canvas.mpl_connect('button_press_event', lambda event: self.on_spectrogram_double_click(event, file_path))
+
+        return onsets, offsets
 
         # Afficher la figure
         #plt.show()
