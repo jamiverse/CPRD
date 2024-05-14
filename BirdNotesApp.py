@@ -17,6 +17,7 @@ import glob
 import shutil
 # Si Song_fucntions est dans le même dossier, sinon il faut modifier en import Song_functions from ""
 import Song_functions
+import ChangeParameters
 
 
 window =('hamming')
@@ -91,20 +92,24 @@ class App(customtkinter.CTk):
         self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, command=self.split_silences, text="Clean audio file")        
         self.sidebar_button_3.grid(row=4, column=0, padx=20, pady=10)
 
+        # Bouton pour changer les parametres du fichier json
+        self.sidebar_button4 = customtkinter.CTkButton(self.sidebar_frame, text = "Change Parameters", command=self.main_parameters)
+        self.sidebar_button4.grid(row=5, column=0, padx=20, pady=10, sticky="ew" )
+
         
         #label des boutons
         self.appearance_mode_label = customtkinter.CTkLabel(self.sidebar_frame, text="Appearance Mode:", anchor="w")
-        self.appearance_mode_label.grid(row=5, column=0, padx=20, pady=(10, 0))
+        self.appearance_mode_label.grid(row=6, column=0, padx=20, pady=(10, 0))
         self.appearance_mode_optionemenu = customtkinter.CTkOptionMenu(self.sidebar_frame, values=["Light", "Dark", "System"],
                                                                        command=self.change_appearance_mode_event)
-        self.appearance_mode_optionemenu.grid(row=6, column=0, padx=20, pady=(10, 10))
+        self.appearance_mode_optionemenu.grid(row=7, column=0, padx=20, pady=(10, 10))
         
         # Ajout de l'option de scaling
         self.scaling_label = customtkinter.CTkLabel(self.sidebar_frame, text="UI Scaling:", anchor="w")
-        self.scaling_label.grid(row=7, column=0, padx=20, pady=(10, 0))
+        self.scaling_label.grid(row=8, column=0, padx=20, pady=(10, 0))
         self.scaling_optionemenu = customtkinter.CTkOptionMenu(self.sidebar_frame, values=["80%", "90%", "100%", "110%", "120%"],
                                                                command=self.change_scaling_event)
-        self.scaling_optionemenu.grid(row=8, column=0, padx=20, pady=(10, 20))
+        self.scaling_optionemenu.grid(row=9, column=0, padx=20, pady=(10, 20))
 
 
         #frame d'en bas
@@ -147,6 +152,11 @@ class App(customtkinter.CTk):
         #ctrl Z pour enlever les annotations (à implémenter)
         #self.bind("<Control-z>", self.undo_annotation)
         #self.bind("<Command-z>", self.undo_annotation)
+
+    def main_parameters(self) :
+        parameters_file = "parameters.json"
+        app = ChangeParameters.ChangeParamApp(parameters_file)
+        app.mainloop()
 
     def split_silences(self):
         if self.fetched_audio_file_path is None:
