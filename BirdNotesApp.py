@@ -10,10 +10,14 @@ import numpy as np
 #from remove_silences import split_audio_by_silence
 import os
 import Song_functions
+<<<<<<< Updated upstream
 import json
 import scipy
 import ChangeParameters
 
+=======
+import ChangeParameters
+>>>>>>> Stashed changes
 
 window =('hamming')
 overlap = 64
@@ -57,7 +61,7 @@ class App(customtkinter.CTk):
 
         #frame à gauche pour les boutons
         self.sidebar_frame = customtkinter.CTkFrame(self, width=140, corner_radius=0)
-        self.sidebar_frame.grid(row=0, column=0, rowspan=4, sticky="nsew")
+        self.sidebar_frame.grid(row=0, column=0, rowspan=5, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
 
         self.save_button = customtkinter.CTkButton(self.sidebar_frame, text="Save spectrogram", command=self.save_spectrogram)
@@ -73,7 +77,23 @@ class App(customtkinter.CTk):
        
         self.sidebar_button_2 = customtkinter.CTkButton(self.sidebar_frame, command=self.save_annotations, text="Save annotations")
         self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=10)
+<<<<<<< Updated upstream
+=======
+
+        # Bouton pour séparer les silences (path = current directory) il faut que le dossier source (Raw_songs) soit dans le même dossier que le code
+        self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, command=self.split_silences, text="Clean audio file")        
+        self.sidebar_button_3.grid(row=4, column=0, padx=20, pady=10)
+
+    #------------------------CODE CENY ---------------------------------------------------------
+        self.sidebar_button4 = customtkinter.CTkButton(self.sidebar_frame, text = "Change Parameters", command=self.main_parameters)
+        self.sidebar_button4.grid(row=5, column=0, padx=20, pady=10, sticky="ew" )
+>>>>>>> Stashed changes
         
+    def main_parameters(self) :
+        parameters_file = "parameters.json"
+        app = ChangeParameters.ChangeParamApp(parameters_file)
+        app.mainloop()
+    #------------------------CODE CENY ---------------------------------------------------------
         #label des boutons
         self.appearance_mode_label = customtkinter.CTkLabel(self.sidebar_frame, text="Appearance Mode:", anchor="w")
         self.appearance_mode_label.grid(row=5, column=0, padx=20, pady=(10, 0))
