@@ -47,7 +47,7 @@ class App(customtkinter.CTk):
         self.sidebar_frame.grid(row=0, column=0, rowspan=4, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
 
-        self.save_button = customtkinter.CTkButton(self.sidebar_frame, text="Save spectrogram", command=self.save_spectrogram)
+        self.save_button = customtkinter.CTkButton(self.sidebar_frame, text="Save into npy", command=self.save_spectrogram)
         self.save_button.grid(row=3, column=0, padx=(20, 20), pady=(10, 10), sticky="ew")
         
         #nom de l'interface
