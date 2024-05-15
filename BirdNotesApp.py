@@ -55,7 +55,7 @@ class App(customtkinter.CTk):
         self.fetched_audio_file_path = None
 
         # configure window
-        self.title("Bird Song Recognition")
+        self.title("Bird Song App")
         self.geometry(f"{1100}x{580}")
 
         # configure grid layout (4x4)
