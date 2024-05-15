@@ -1,5 +1,6 @@
 import tkinter as tk
 import tkinter.messagebox
+from tkinter import messagebox, filedialog
 import customtkinter
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -18,6 +19,8 @@ import shutil
 # Si Song_fucntions est dans le même dossier, sinon il faut modifier en import Song_functions from ""
 import Song_functions
 import ChangeParameters
+import subprocess
+import os
 
 
 window =('hamming')
@@ -55,7 +58,7 @@ class App(customtkinter.CTk):
         self.fetched_audio_file_path = None
 
         # configure window
-        self.title("Bird Song Recognition")
+        self.title("Bird Song App")
         self.geometry(f"{1100}x{580}")
 
         # configure grid layout (4x4)
@@ -74,15 +77,15 @@ class App(customtkinter.CTk):
         self.sidebar_frame.grid(row=0, column=0, rowspan=4, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
 
-        self.save_button = customtkinter.CTkButton(self.sidebar_frame, text="Save spectrogram", command=self.save_spectrogram)
+        self.save_button = customtkinter.CTkButton(self.sidebar_frame, text="npy to wav", command=self.save_signal)
         self.save_button.grid(row=3, column=0, padx=(20, 20), pady=(10, 10), sticky="ew")
         
         #nom de l'interface
-        self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="Bird Song Recognition", font=customtkinter.CTkFont(size=20, weight="bold"))
+        self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="Bird Song App", font=customtkinter.CTkFont(size=20, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
         
         #ajout des boutons dans le sidebar
-        self.sidebar_button_1 = customtkinter.CTkButton(self.sidebar_frame, command=self.fetch_audio_file, text= "Fetch audio file")
+        self.sidebar_button_1 = customtkinter.CTkButton(self.sidebar_frame, command=self.fetch_audio_file, text= "Open audio file")
         self.sidebar_button_1.grid(row=1, column=0, padx=20, pady=10)
        
         self.sidebar_button_2 = customtkinter.CTkButton(self.sidebar_frame, command=self.save_annotations, text="Save annotations")
@@ -118,26 +121,30 @@ class App(customtkinter.CTk):
         self.low_frame.grid_columnconfigure(1, weight=1)
         
         #pr les annotations automatiques (hvc) (pas encore implémenté)
-        automatic_annotations_button = customtkinter.CTkOptionMenu(self.low_frame, values=["HVC"]) #mettre la commande
-        automatic_annotations_button.grid(row=0, column=1, padx=(20, 10), pady=(10, 20), sticky="ew")
+        self.hvc_button = customtkinter.CTkButton(self.low_frame, text="HVC labelling", command=self.launch_manual_labelling)
+        self.hvc_button.grid(row=0, column=1, padx=(20, 10), pady=(10, 20), sticky="ew")
+        #automatic_annotations_button = customtkinter.CTkOptionMenu(self.low_frame, values=["HVC"]) #mettre la commande
+        #automatic_annotations_button.grid(row=0, column=1, padx=(20, 10), pady=(10, 20), sticky="ew")
         automatic_annotations_label = customtkinter.CTkLabel(self.low_frame, text="Automatic annotations: ", anchor="center") #anchor="w" aligne le texte à gauche, pour
         automatic_annotations_label.grid(row=0, column=0, padx=(20, 10), pady=(10, 20), sticky="ew")
 
         # Add button to adjust amplitude threshold
-        adjust_threshold_button = customtkinter.CTkButton(self.low_frame, text="Adjust Amplitude Threshold", command=self.adjust_amplitude_threshold)
+        adjust_threshold_button = customtkinter.CTkButton(self.low_frame, text="Load HCV annotations", command=self.load_annotations_from_file) #ajouter une fonction plus ouverte
         adjust_threshold_button.grid(row=0, column=2, padx=(20, 10), pady=(10, 10), sticky="nsew") 
 
         #pr des notes qui sait (à modifier en tant que fenètre permettant l'affichage des spectrogrammes)
-        self.textbox = customtkinter.CTkTextbox(self.low_frame, width=250)
-        self.textbox.grid(row=1, column=2, padx=(20, 10), pady=(10, 0), sticky="nsew")
-        self.textbox.insert("0.0", "Ceci est un exemple de note")
+        self.console_textbox = customtkinter.CTkTextbox(self.low_frame, width=250)
+        self.console_textbox.grid(row=1, column=1, padx=(20, 10), pady=(10, 0), sticky="nsew")
+        self.console_textbox.insert("0.0", "Console Output:\n")
+
+        # Rediriger les sorties d'impression vers le widget personnalisé
+        sys.stdout = ConsoleRedirector(self.console_textbox)
         
         # Store annotations
         self.annotations = []
-
         # Store text objects for annotations
-        self.annotation_texts = []
-
+        self.annotation_texts = []  
+       
         # Store ax for accessing in other methods
         self.ax = None
 
@@ -150,8 +157,22 @@ class App(customtkinter.CTk):
         self.last_added_annotation = None
 
         #ctrl Z pour enlever les annotations (à implémenter)
-        #self.bind("<Control-z>", self.undo_annotation)
-        #self.bind("<Command-z>", self.undo_annotation)
+        #self.bind("<Control-z>", lambda event: self.undo_annotation())
+        #self.bind("<Command-z>", lambda event: self.undo_annotation())
+
+
+    #modiifier pour éviter l'ouverture de deux fenêtres 
+    def launch_manual_labelling(self):
+        # Lancer le script manuel_labelling.py
+        script_path = "Manual_labeling.py"
+        if os.path.exists(script_path):
+            # Ouvrir une boîte de dialogue pour sélectionner un dossier
+            folder_path = tk.filedialog.askdirectory()
+            if folder_path:
+                # Lancer le script avec le chemin du dossier en argument
+                subprocess.Popen(["python", script_path, folder_path])
+        else:
+            tk.messagebox.showerror("Script Not Found", "Le script Manual_labeling.py n'a pas été trouvé.")
 
     def main_parameters(self) :
         parameters_file = "parameters.json"
@@ -245,35 +266,6 @@ class App(customtkinter.CTk):
             self.fetched_audio_file_path = file_path
             self.display_smooth_amplitude_plot(file_path)
 
-    #fonction pour afficher le spectrogramme
-    def display_spectrogram(self, file_path):
-        self.sample_rate, self.audio_data = wavfile.read(file_path)
-        _, _, Sxx = spectrogram(self.audio_data, fs=self.sample_rate)
-
-        # Définir les dimensions de la figure en fonction des dimensions du cadre spectrogram_canvas
-        fig_width = self.spectrogram_canvas.winfo_width() / 100  # Convertir en pouces
-        fig_height = self.spectrogram_canvas.winfo_height() / 100 # Convertir en pouces
-
-        fig, ax = plt.subplots(figsize=(fig_width, fig_height))
-        im = ax.specgram(self.audio_data, Fs=self.sample_rate)[3]  # Obtenez l'objet image seulement
-        ax.set_xlabel('Time (s)')
-        ax.set_ylabel('Frequency (Hz)')
-        ax.set_title('Spectrogram of Audio File')
-
-        # Incorporer la figure dans le widget Canvas
-        canvas = FigureCanvasTkAgg(fig, master=self.spectrogram_canvas)
-        canvas.draw()
-        canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
-
-        #Ajouter la barre d'outils matplotlib (si besoin pour zoomer ect)
-        #toolbar = NavigationToolbar2Tk(canvas, self.spectrogram_canvas)
-        #toolbar.update()
-
-        self.ax = ax  # Store ax for accessing later
-        
-        # Bind left-click event to the spectrogram (simulate double-click)
-        canvas.mpl_connect('button_press_event', lambda event: self.on_spectrogram_double_click(event, file_path))
-
 
     def display_smooth_amplitude_plot(self, file_path):
 
@@ -333,11 +325,14 @@ class App(customtkinter.CTk):
         ax2.set_ylabel('Amplitude')
         ax2.set_xlabel('Time (s)')
 
-
         # Incorporer la figure dans le widget Canvas
         canvas = FigureCanvasTkAgg(fig, master=self.spectrogram_canvas)
         canvas.draw()
         canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+
+        #Ajouter la barre d'outils matplotlib (si besoin pour zoomer ect)
+        toolbar = NavigationToolbar2Tk(canvas, self.spectrogram_canvas)
+        toolbar.update()
 
         # Ajouter la ligne horizontale pour le seuil
         ax2.axhline(y=threshold, color='green')
@@ -369,7 +364,6 @@ class App(customtkinter.CTk):
         
             #Store annotation with coordinates
             self.temp_annotation = (x, y, annotation)
-            print("Temp annotation set:", self.temp_annotation)
 
             #Add annotation text next to the red line
             text = self.ax.text(x + 0.1, y, annotation, color='red', fontsize=8)
@@ -384,7 +378,7 @@ class App(customtkinter.CTk):
             if self.temp_annotation is not None:
                 #second vertical line at the click location
                 self.ax.axvline(x=x, color='b', linestyle='-')
-                
+
                 # Add the second bar to the annotation
                 self.temp_annotation = (self.temp_annotation[0], x, self.temp_annotation[2])
                 self.annotations.append(self.temp_annotation)
@@ -401,15 +395,6 @@ class App(customtkinter.CTk):
                 # Update the plot
                 plt.draw()
 
-    #fonction pour ajuster le seuil d'amplitude
-    def adjust_amplitude_threshold(self):
-        #enter the amplitude threshold
-        threshold = tk.simpledialog.askfloat("Amplitude Threshold", "Enter Amplitude Threshold:")
-        if threshold is not None:
-            #ajuster amplitude threshold for spectrogram display
-            self.ax.set_ylim(0, threshold)
-            plt.draw()
-    
     #fonction pour enregistrer les annotations
     def save_annotations(self):
         #save dans csv
@@ -425,30 +410,41 @@ class App(customtkinter.CTk):
             
             tk.messagebox.showinfo("File Saved", f"Annotations saved to {annotation_file_path}")
 
+    def load_annotations_from_file(self):
+        # Lancer le script AnnotationEditor.py
+        script_path = "AnnotationEditor.py"
+        if os.path.exists(script_path):
+            subprocess.Popen(["python", script_path])
+        else:
+            tk.messagebox.showerror("Script Not Found", "Le script AnnotationEditor.py n'a pas été trouvé.")
+
     #fonction pour enregistrer le spectrogramme
-    def save_spectrogram(self):
-        # Vérifier s'il y a des annotations à sauvegarder
-        if not self.annotations:
-            tk.messagebox.showwarning("Aucune annotation", "Il n'y a aucune annotation à sauvegarder.")
+    def save_signal(self):
+        if not self.fetched_audio_file_path:
+            messagebox.showerror("Aucun fichier audio", "Veuillez d'abord ouvrir un fichier audio.")
             return
+        
+        if rec_system == 'Alpha_omega':
+            fs = 22321.4283
+        elif rec_system == 'Neuralynx':
+            fs = 32000
+        elif rec_system == 'Neuropixel':
+            fs = 32723.037368
 
-        # Récupérer les données du spectrogramme actuellement affiché
-        Sxx, _, _, _ = self.ax.specgram(self.audio_data, Fs=self.sample_rate)
-        spectrogram_data = Sxx
+        # Vérifier si le fichier audio est au format npy
+        if self.fetched_audio_file_path.endswith('.npy'):
+            # Charger les données audio depuis le fichier npy
+            audio_data = np.load(self.fetched_audio_file_path)
+            sample_rate = int(fs)
 
-        # Enregistrer les annotations avec le spectrogramme
-        annotated_spectrogram = {
-            "spectrogram_data": spectrogram_data,
-            "annotations": self.annotations
-        }
-
-        #choisir un emplacement pour enregistrer le fichier .npy
-        file_path = tk.filedialog.asksaveasfilename(defaultextension=".npy", filetypes=[("NumPy Files", "*.npy")])
-        if file_path:
-            #enregistrer les données au format .npy
-            np.save(file_path, annotated_spectrogram)
-
-            tk.messagebox.showinfo("Spectrogramme Enregistré", f"Le spectrogramme annoté a été enregistré sous: {file_path}")
+            # Obtenir le chemin de sortie pour le fichier WAV
+            output_file_path = filedialog.asksaveasfilename(defaultextension=".wav", filetypes=[("Fichiers WAV", "*.wav")])
+            if output_file_path:
+                # Écrire les données audio au format WAV
+                wavfile.write(output_file_path, sample_rate, audio_data)
+                messagebox.showinfo("Enregistrement Terminé", f"Le fichier a été enregistré sous: {output_file_path}")
+        else:
+            messagebox.showerror("Format Non Supporté", "Le fichier audio doit être au format .npy pour cette opération.")
 
         
     #fonction pour changer le mode d'apparence
@@ -460,6 +456,16 @@ class App(customtkinter.CTk):
         new_scaling_float = int(new_scaling.replace("%", "")) / 100
         customtkinter.set_widget_scaling(new_scaling_float)
 
+class ConsoleRedirector:
+    def __init__(self, textbox_widget):
+        self.textbox_widget = textbox_widget
+
+    def write(self, text):
+        # Écrire le texte dans le widget personnalisé
+        self.textbox_widget.insert("end", text)
+
+    def flush(self):
+        pass
 
 if __name__ == "__main__":
     app = App()
