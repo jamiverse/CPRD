@@ -128,7 +128,7 @@ class App(customtkinter.CTk):
         automatic_annotations_label.grid(row=0, column=0, padx=(20, 10), pady=(10, 20), sticky="ew")
 
         # Add button to adjust amplitude threshold
-        adjust_threshold_button = customtkinter.CTkButton(self.low_frame, text="Adjust Amplitude Threshold", command=self.adjust_amplitude_threshold)
+        adjust_threshold_button = customtkinter.CTkButton(self.low_frame, text="Load HCV annotations", command=self.load_annotations_from_file) #ajouter une fonction plus ouverte
         adjust_threshold_button.grid(row=0, column=2, padx=(20, 10), pady=(10, 10), sticky="nsew") 
 
         #pr des notes qui sait (à modifier en tant que fenètre permettant l'affichage des spectrogrammes)
@@ -157,6 +157,7 @@ class App(customtkinter.CTk):
         #self.bind("<Control-z>", self.undo_annotation)
         #self.bind("<Command-z>", self.undo_annotation)
 
+    #modiifier pour éviter l'ouverture de deux fenêtres 
     def launch_manual_labelling(self):
         # Lancer le script manuel_labelling.py
         script_path = "Manual_labeling.py"
@@ -443,6 +444,14 @@ class App(customtkinter.CTk):
                     f.write(f"{annotation[0]}, {annotation[1]}, {annotation[2]}\n")
             
             tk.messagebox.showinfo("File Saved", f"Annotations saved to {annotation_file_path}")
+
+    def load_annotations_from_file(self):
+        # Lancer le script AnnotationEditor.py
+        script_path = "AnnotationEditor.py"
+        if os.path.exists(script_path):
+            subprocess.Popen(["python", script_path])
+        else:
+            tk.messagebox.showerror("Script Not Found", "Le script AnnotationEditor.py n'a pas été trouvé.")
 
     #fonction pour enregistrer le spectrogramme
     def save_signal(self):
