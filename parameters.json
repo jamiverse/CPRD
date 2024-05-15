@@ -1,6 +1,6 @@
 {
     "songChannelName": "CSC20",
-    "threshold": 3e-07,
+    "threshold": 1e-07,
     "min_syl_dur": 0.02,
     "min_silent_dur": 0.003,
     "start_pos": 0.0,

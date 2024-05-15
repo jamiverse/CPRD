@@ -144,8 +144,6 @@ class App(customtkinter.CTk):
         self.annotations = []
         # Store text objects for annotations
         self.annotation_texts = []  
-
-        self.actions_stack = []
        
         # Store ax for accessing in other methods
         self.ax = None
@@ -159,8 +157,8 @@ class App(customtkinter.CTk):
         self.last_added_annotation = None
 
         #ctrl Z pour enlever les annotations (à implémenter)
-        self.bind("<Control-z>", lambda event: self.undo_annotation())
-        self.bind("<Command-z>", lambda event: self.undo_annotation())
+        #self.bind("<Control-z>", lambda event: self.undo_annotation())
+        #self.bind("<Command-z>", lambda event: self.undo_annotation())
 
 
     #modiifier pour éviter l'ouverture de deux fenêtres 
@@ -362,11 +360,10 @@ class App(customtkinter.CTk):
                 return
             
             #vertical line at the double-click location
-            self.line1 = self.ax.axvline(x=x, color='r', linestyle='-')
+            self.ax.axvline(x=x, color='r', linestyle='-')
         
             #Store annotation with coordinates
             self.temp_annotation = (x, y, annotation)
-            print("Temp annotation set:", self.temp_annotation)
 
             #Add annotation text next to the red line
             text = self.ax.text(x + 0.1, y, annotation, color='red', fontsize=8)
@@ -380,8 +377,7 @@ class App(customtkinter.CTk):
             
             if self.temp_annotation is not None:
                 #second vertical line at the click location
-                self.line2 = self.ax.axvline(x=x, color='b', linestyle='-')
-                self.save_state()
+                self.ax.axvline(x=x, color='b', linestyle='-')
 
                 # Add the second bar to the annotation
                 self.temp_annotation = (self.temp_annotation[0], x, self.temp_annotation[2])
@@ -392,11 +388,6 @@ class App(customtkinter.CTk):
                 self.annotation_texts.append(text)
 
                 self.last_added_annotation = self.temp_annotation
-                
-                self.save_state()
-            
-                self.annotation_lines[self.temp_annotation] = (self.line1, self.line2)
-                print("Annotation lines added:", self.annotation_lines)
                 
                 # Remove temporary annotation
                 self.temp_annotation = None
