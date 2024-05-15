@@ -1,6 +1,6 @@
 import tkinter as tk
 import tkinter.messagebox
-from tkinter import scrolledtext
+from tkinter import messagebox, filedialog
 import customtkinter
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -77,7 +77,7 @@ class App(customtkinter.CTk):
         self.sidebar_frame.grid(row=0, column=0, rowspan=4, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
 
-        self.save_button = customtkinter.CTkButton(self.sidebar_frame, text="Save signal into npy", command=self.save_signal)
+        self.save_button = customtkinter.CTkButton(self.sidebar_frame, text="npy to wav", command=self.save_signal)
         self.save_button.grid(row=3, column=0, padx=(20, 20), pady=(10, 10), sticky="ew")
         
         #nom de l'interface
@@ -143,9 +143,9 @@ class App(customtkinter.CTk):
         # Store annotations
         self.annotations = []
         # Store text objects for annotations
-        self.annotation_texts = []
-        
-        self.undo_stack = []
+        self.annotation_texts = []  
+
+        self.actions_stack = []
        
         # Store ax for accessing in other methods
         self.ax = None
@@ -159,8 +159,8 @@ class App(customtkinter.CTk):
         self.last_added_annotation = None
 
         #ctrl Z pour enlever les annotations (à implémenter)
-        #self.bind("<Control-z>", lambda event: self.undo_annotation())
-        #self.bind("<Command-z>", lambda event: self.undo_annotation())
+        self.bind("<Control-z>", lambda event: self.undo_annotation())
+        self.bind("<Command-z>", lambda event: self.undo_annotation())
 
 
     #modiifier pour éviter l'ouverture de deux fenêtres 
@@ -362,7 +362,7 @@ class App(customtkinter.CTk):
                 return
             
             #vertical line at the double-click location
-            self.ax.axvline(x=x, color='r', linestyle='-')
+            self.line1 = self.ax.axvline(x=x, color='r', linestyle='-')
         
             #Store annotation with coordinates
             self.temp_annotation = (x, y, annotation)
@@ -380,7 +380,7 @@ class App(customtkinter.CTk):
             
             if self.temp_annotation is not None:
                 #second vertical line at the click location
-                self.ax.axvline(x=x, color='b', linestyle='-')
+                self.line2 = self.ax.axvline(x=x, color='b', linestyle='-')
                 self.save_state()
 
                 # Add the second bar to the annotation
@@ -394,6 +394,9 @@ class App(customtkinter.CTk):
                 self.last_added_annotation = self.temp_annotation
                 
                 self.save_state()
+            
+                self.annotation_lines[self.temp_annotation] = (self.line1, self.line2)
+                print("Annotation lines added:", self.annotation_lines)
                 
                 # Remove temporary annotation
                 self.temp_annotation = None
@@ -401,23 +404,6 @@ class App(customtkinter.CTk):
                 # Update the plot
                 plt.draw()
 
-    def undo_annotation(self):
-        if self.undo_stack:
-            # Restaurer l'état précédent
-            self.annotations, self.annotation_texts, self.annotation_lines = self.undo_stack.pop()
-            print("Undo completed.")
-            
-            # Mettre à jour le tracé du spectrogramme pour refléter l'état restauré
-            self.ax.figure.canvas.draw()
-        else:
-            print("Aucune action à annuler.")
-
-    # Fonction pour enregistrer l'état actuel
-    def save_state(self):
-        state = (self.annotations.copy(), self.annotation_texts.copy(), self.annotation_lines.copy())
-        self.undo_stack.append(state)
-        print("State saved:", state)
-    
     #fonction pour enregistrer les annotations
     def save_annotations(self):
         #save dans csv
@@ -443,28 +429,31 @@ class App(customtkinter.CTk):
 
     #fonction pour enregistrer le spectrogramme
     def save_signal(self):
-        # Vérifier s'il y a des annotations à sauvegarder
-        if not self.annotations:
-            tk.messagebox.showwarning("Aucune annotation", "Il n'y a aucune annotation à sauvegarder.")
+        if not self.fetched_audio_file_path:
+            messagebox.showerror("Aucun fichier audio", "Veuillez d'abord ouvrir un fichier audio.")
             return
+        
+        if rec_system == 'Alpha_omega':
+            fs = 22321.4283
+        elif rec_system == 'Neuralynx':
+            fs = 32000
+        elif rec_system == 'Neuropixel':
+            fs = 32723.037368
 
-        # Récupérer les données du spectrogramme actuellement affiché
-        Sxx, _, _, _ = self.ax.specgram(self.audio_data, Fs=self.sample_rate)
-        spectrogram_data = Sxx
+        # Vérifier si le fichier audio est au format npy
+        if self.fetched_audio_file_path.endswith('.npy'):
+            # Charger les données audio depuis le fichier npy
+            audio_data = np.load(self.fetched_audio_file_path)
+            sample_rate = int(fs)
 
-        # Enregistrer les annotations avec le spectrogramme
-        annotated_spectrogram = {
-            "spectrogram_data": spectrogram_data,
-            "annotations": self.annotations
-        }
-
-        #choisir un emplacement pour enregistrer le fichier .npy
-        file_path = tk.filedialog.asksaveasfilename(defaultextension=".npy", filetypes=[("NumPy Files", "*.npy")])
-        if file_path:
-            #enregistrer les données au format .npy
-            np.save(file_path, annotated_spectrogram)
-
-            tk.messagebox.showinfo("Spectrogramme Enregistré", f"Le spectrogramme annoté a été enregistré sous: {file_path}")
+            # Obtenir le chemin de sortie pour le fichier WAV
+            output_file_path = filedialog.asksaveasfilename(defaultextension=".wav", filetypes=[("Fichiers WAV", "*.wav")])
+            if output_file_path:
+                # Écrire les données audio au format WAV
+                wavfile.write(output_file_path, sample_rate, audio_data)
+                messagebox.showinfo("Enregistrement Terminé", f"Le fichier a été enregistré sous: {output_file_path}")
+        else:
+            messagebox.showerror("Format Non Supporté", "Le fichier audio doit être au format .npy pour cette opération.")
 
         
     #fonction pour changer le mode d'apparence
