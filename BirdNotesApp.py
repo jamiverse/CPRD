@@ -74,15 +74,15 @@ class App(customtkinter.CTk):
         self.sidebar_frame.grid(row=0, column=0, rowspan=4, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
 
-        self.save_button = customtkinter.CTkButton(self.sidebar_frame, text="Save spectrogram", command=self.save_spectrogram)
+        self.save_button = customtkinter.CTkButton(self.sidebar_frame, text="Save signal into npy", command=self.save_signal)
         self.save_button.grid(row=3, column=0, padx=(20, 20), pady=(10, 10), sticky="ew")
         
         #nom de l'interface
-        self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="Bird Song Recognition", font=customtkinter.CTkFont(size=20, weight="bold"))
+        self.logo_label = customtkinter.CTkLabel(self.sidebar_frame, text="Bird Song App", font=customtkinter.CTkFont(size=20, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
         
         #ajout des boutons dans le sidebar
-        self.sidebar_button_1 = customtkinter.CTkButton(self.sidebar_frame, command=self.fetch_audio_file, text= "Fetch audio file")
+        self.sidebar_button_1 = customtkinter.CTkButton(self.sidebar_frame, command=self.fetch_audio_file, text= "Open audio file")
         self.sidebar_button_1.grid(row=1, column=0, padx=20, pady=10)
        
         self.sidebar_button_2 = customtkinter.CTkButton(self.sidebar_frame, command=self.save_annotations, text="Save annotations")
@@ -426,7 +426,7 @@ class App(customtkinter.CTk):
             tk.messagebox.showinfo("File Saved", f"Annotations saved to {annotation_file_path}")
 
     #fonction pour enregistrer le spectrogramme
-    def save_spectrogram(self):
+    def save_signal(self):
         # Vérifier s'il y a des annotations à sauvegarder
         if not self.annotations:
             tk.messagebox.showwarning("Aucune annotation", "Il n'y a aucune annotation à sauvegarder.")
