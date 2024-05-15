@@ -18,6 +18,8 @@ import shutil
 # Si Song_fucntions est dans le même dossier, sinon il faut modifier en import Song_functions from ""
 import Song_functions
 import ChangeParameters
+import subprocess
+import os
 
 
 window =('hamming')
@@ -118,8 +120,10 @@ class App(customtkinter.CTk):
         self.low_frame.grid_columnconfigure(1, weight=1)
         
         #pr les annotations automatiques (hvc) (pas encore implémenté)
-        automatic_annotations_button = customtkinter.CTkOptionMenu(self.low_frame, values=["HVC"]) #mettre la commande
-        automatic_annotations_button.grid(row=0, column=1, padx=(20, 10), pady=(10, 20), sticky="ew")
+        self.hvc_button = customtkinter.CTkButton(self.low_frame, text="HVC labelling", command=self.launch_manual_labelling)
+        self.hvc_button.grid(row=0, column=1, padx=(20, 10), pady=(10, 20), sticky="ew")
+        #automatic_annotations_button = customtkinter.CTkOptionMenu(self.low_frame, values=["HVC"]) #mettre la commande
+        #automatic_annotations_button.grid(row=0, column=1, padx=(20, 10), pady=(10, 20), sticky="ew")
         automatic_annotations_label = customtkinter.CTkLabel(self.low_frame, text="Automatic annotations: ", anchor="center") #anchor="w" aligne le texte à gauche, pour
         automatic_annotations_label.grid(row=0, column=0, padx=(20, 10), pady=(10, 20), sticky="ew")
 
@@ -152,6 +156,18 @@ class App(customtkinter.CTk):
         #ctrl Z pour enlever les annotations (à implémenter)
         #self.bind("<Control-z>", self.undo_annotation)
         #self.bind("<Command-z>", self.undo_annotation)
+
+    def launch_manual_labelling(self):
+        # Lancer le script manuel_labelling.py
+        script_path = "Manual_labeling.py"
+        if os.path.exists(script_path):
+            # Ouvrir une boîte de dialogue pour sélectionner un dossier
+            folder_path = tk.filedialog.askdirectory()
+            if folder_path:
+                # Lancer le script avec le chemin du dossier en argument
+                subprocess.Popen(["python", script_path, folder_path])
+        else:
+            tk.messagebox.showerror("Script Not Found", "Le script Manual_labeling.py n'a pas été trouvé.")
 
     def main_parameters(self) :
         parameters_file = "parameters.json"

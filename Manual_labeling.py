@@ -4,6 +4,7 @@
 Created on Mon Jul  1 15:41:48 2019
 
 @author: rsankar
+modified by: Céline Hosteins
 """
 
 ###################################################################################
@@ -29,7 +30,7 @@ matplotlib.use('Qt5Agg')
 
 import matplotlib.pyplot as plt
 import matplotlib.widgets as mplw
-
+from tkinter import Tk, filedialog
 
 ###################################################################################
 # Block 0: Define variables and functions
@@ -57,9 +58,6 @@ Nb_syls=0
 keep_song =''
 #rec_system = 'Alpha_omega' # or 'Neuralynx' or 'Other'
 rec_system = parameters['rec_system']
-
-
-
 
 
 # Text box widget to collect labels
@@ -99,11 +97,16 @@ class myButton():
         sys.exit()
 
 
+root = Tk()
+root.withdraw()
+folder_name = filedialog.askdirectory()
 
-
+if not folder_name:
+    print('No folder selected. Exiting.')
+    sys.exit()
 
 # Parse folder
-folder_name = sys.argv[1]
+#folder_name = sys.argv[1]
 if os.path.isdir(folder_name) is False:
     raise ValueError("Not a folder.")
 
