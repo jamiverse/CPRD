@@ -1,12 +1,11 @@
 {
-    "songChannelName"                   :   "CSC20",
-    "threshold"                         :   2e-6,
-    "min_syl_dur"                       :   0.02,
-    "min_silent_dur"                    :   0.003,
-    "start_pos"                         :   0,
-    "display_duration"                  :   30,
-    "rec_system"                        :   "Alpha_omega",
-    "vmin"                              :   null,
-    "vmax"                              :   null
-    
+    "songChannelName": "CSC20",
+    "threshold": 2e-07,
+    "min_syl_dur": 0.02,
+    "min_silent_dur": 0.003,
+    "start_pos": 0.0,
+    "display_duration": 30.0,
+    "rec_system": "Alpha_omega",
+    "vmin": null,
+    "vmax": null
 }

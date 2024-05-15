@@ -12,3 +12,11 @@ Pour tester, essayez surtout avec 2022-04-25_13-00-50.npy qui affiche un truc sy
 
 
 NB: je laisse la fonction display_spectrogram pour l'instant au cas où on en aurait besoin plus tard (même si je pense pas trop)
+
+
+Infos par rapport aux scripts : 
+
+- By default, only the first 30seconds of the file is displayed.
+    To change the starting position, change 'start_pos' in terms of sample index.
+    To change the duration to plot, change 'display_duration' in seconds.
+    To plot the entire file, set start_pos as 0 and display_duration as any number longer than the file.
