@@ -15,11 +15,11 @@ class ChangeParamApp(ctk.CTk):
         self.create_widgets()
 
         self.sidebar_frame = ctk.CTkFrame(self, width=140, corner_radius=0)
-        self.sidebar_frame.grid(row=0, column=0, rowspan=4, sticky="nsew")
+        self.sidebar_frame.grid(row=0, column=0, rowspan=1, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
 
         self.save_button = ctk.CTkButton(self.sidebar_frame, text="Save", command=self.save_changes)
-        self.save_button.grid(row=3, column=0, padx=(20, 20), pady=(10, 10), sticky="ew")
+        self.save_button.grid(row=0, column=0, padx=(20, 20), pady=(10, 10), sticky="ew")
 
     def load_parameters(self):
         try:
@@ -31,7 +31,7 @@ class ChangeParamApp(ctk.CTk):
 
     def create_widgets(self):
         self.parameter_entries = {}
-        row = 0
+        row = 1
         for parameter, value in self.parameters.items():
             label = ctk.CTkLabel(self, text=parameter)
             label.grid(row=row, column=0, padx=5, pady=5, sticky="w")
