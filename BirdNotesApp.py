@@ -1,5 +1,6 @@
 import tkinter as tk
 import tkinter.messagebox
+from tkinter import scrolledtext
 import customtkinter
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -132,16 +133,20 @@ class App(customtkinter.CTk):
         adjust_threshold_button.grid(row=0, column=2, padx=(20, 10), pady=(10, 10), sticky="nsew") 
 
         #pr des notes qui sait (à modifier en tant que fenètre permettant l'affichage des spectrogrammes)
-        self.textbox = customtkinter.CTkTextbox(self.low_frame, width=250)
-        self.textbox.grid(row=1, column=2, padx=(20, 10), pady=(10, 0), sticky="nsew")
-        self.textbox.insert("0.0", "Ceci est un exemple de note")
+        self.console_textbox = customtkinter.CTkTextbox(self.low_frame, width=250)
+        self.console_textbox.grid(row=1, column=1, padx=(20, 10), pady=(10, 0), sticky="nsew")
+        self.console_textbox.insert("0.0", "Console Output:\n")
+
+        # Rediriger les sorties d'impression vers le widget personnalisé
+        sys.stdout = ConsoleRedirector(self.console_textbox)
         
         # Store annotations
         self.annotations = []
-
         # Store text objects for annotations
         self.annotation_texts = []
-
+        
+        self.undo_stack = []
+       
         # Store ax for accessing in other methods
         self.ax = None
 
@@ -154,8 +159,9 @@ class App(customtkinter.CTk):
         self.last_added_annotation = None
 
         #ctrl Z pour enlever les annotations (à implémenter)
-        #self.bind("<Control-z>", self.undo_annotation)
-        #self.bind("<Command-z>", self.undo_annotation)
+        #self.bind("<Control-z>", lambda event: self.undo_annotation())
+        #self.bind("<Command-z>", lambda event: self.undo_annotation())
+
 
     #modiifier pour éviter l'ouverture de deux fenêtres 
     def launch_manual_labelling(self):
@@ -261,35 +267,6 @@ class App(customtkinter.CTk):
         if file_path:
             self.fetched_audio_file_path = file_path
             self.display_smooth_amplitude_plot(file_path)
-
-    #fonction pour afficher le spectrogramme
-    def display_spectrogram(self, file_path):
-        self.sample_rate, self.audio_data = wavfile.read(file_path)
-        _, _, Sxx = spectrogram(self.audio_data, fs=self.sample_rate)
-
-        # Définir les dimensions de la figure en fonction des dimensions du cadre spectrogram_canvas
-        fig_width = self.spectrogram_canvas.winfo_width() / 100  # Convertir en pouces
-        fig_height = self.spectrogram_canvas.winfo_height() / 100 # Convertir en pouces
-
-        fig, ax = plt.subplots(figsize=(fig_width, fig_height))
-        im = ax.specgram(self.audio_data, Fs=self.sample_rate)[3]  # Obtenez l'objet image seulement
-        ax.set_xlabel('Time (s)')
-        ax.set_ylabel('Frequency (Hz)')
-        ax.set_title('Spectrogram of Audio File')
-
-        # Incorporer la figure dans le widget Canvas
-        canvas = FigureCanvasTkAgg(fig, master=self.spectrogram_canvas)
-        canvas.draw()
-        canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
-
-        #Ajouter la barre d'outils matplotlib (si besoin pour zoomer ect)
-        #toolbar = NavigationToolbar2Tk(canvas, self.spectrogram_canvas)
-        #toolbar.update()
-
-        self.ax = ax  # Store ax for accessing later
-        
-        # Bind left-click event to the spectrogram (simulate double-click)
-        canvas.mpl_connect('button_press_event', lambda event: self.on_spectrogram_double_click(event, file_path))
 
 
     def display_smooth_amplitude_plot(self, file_path):
@@ -404,7 +381,8 @@ class App(customtkinter.CTk):
             if self.temp_annotation is not None:
                 #second vertical line at the click location
                 self.ax.axvline(x=x, color='b', linestyle='-')
-                
+                self.save_state()
+
                 # Add the second bar to the annotation
                 self.temp_annotation = (self.temp_annotation[0], x, self.temp_annotation[2])
                 self.annotations.append(self.temp_annotation)
@@ -415,20 +393,30 @@ class App(customtkinter.CTk):
 
                 self.last_added_annotation = self.temp_annotation
                 
+                self.save_state()
+                
                 # Remove temporary annotation
                 self.temp_annotation = None
                 
                 # Update the plot
                 plt.draw()
 
-    #fonction pour ajuster le seuil d'amplitude
-    def adjust_amplitude_threshold(self):
-        #enter the amplitude threshold
-        threshold = tk.simpledialog.askfloat("Amplitude Threshold", "Enter Amplitude Threshold:")
-        if threshold is not None:
-            #ajuster amplitude threshold for spectrogram display
-            self.ax.set_ylim(0, threshold)
-            plt.draw()
+    def undo_annotation(self):
+        if self.undo_stack:
+            # Restaurer l'état précédent
+            self.annotations, self.annotation_texts, self.annotation_lines = self.undo_stack.pop()
+            print("Undo completed.")
+            
+            # Mettre à jour le tracé du spectrogramme pour refléter l'état restauré
+            self.ax.figure.canvas.draw()
+        else:
+            print("Aucune action à annuler.")
+
+    # Fonction pour enregistrer l'état actuel
+    def save_state(self):
+        state = (self.annotations.copy(), self.annotation_texts.copy(), self.annotation_lines.copy())
+        self.undo_stack.append(state)
+        print("State saved:", state)
     
     #fonction pour enregistrer les annotations
     def save_annotations(self):
@@ -488,6 +476,16 @@ class App(customtkinter.CTk):
         new_scaling_float = int(new_scaling.replace("%", "")) / 100
         customtkinter.set_widget_scaling(new_scaling_float)
 
+class ConsoleRedirector:
+    def __init__(self, textbox_widget):
+        self.textbox_widget = textbox_widget
+
+    def write(self, text):
+        # Écrire le texte dans le widget personnalisé
+        self.textbox_widget.insert("end", text)
+
+    def flush(self):
+        pass
 
 if __name__ == "__main__":
     app = App()
