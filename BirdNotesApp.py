@@ -180,10 +180,12 @@ class App(customtkinter.CTk):
         app.mainloop()
 
     def split_silences(self):
+        # Check if an audio file has been fetched
         if self.fetched_audio_file_path is None:
             print("No audio file fetched. Please fetch an audio file first.")
             return
         else:
+            # Define a variable to store the fetched audio file path, the file extension and the file name
             print("Splitting silences for:", self.fetched_audio_file_path)
             file_path = self.fetched_audio_file_path
             file_name = os.path.splitext(os.path.basename(file_path))[0]
@@ -205,6 +207,7 @@ class App(customtkinter.CTk):
             else:  # Assuming .npy file extension
                 audio_data = np.load(file_path)
 
+            # Check the recording system (imported from ) to determine the sampling frequency
             if rec_system == 'Alpha_omega':
                 fs = 22321.4283
             elif rec_system == 'Neuralynx':
@@ -212,13 +215,15 @@ class App(customtkinter.CTk):
             elif rec_system == 'Neuropixel':
                 fs = 32723.037368
 
+            # Extract the amplitude of the audio signal
             amp = Song_functions.smooth_data(self.audio_data, fs, freq_cutoffs=(1000, 8000))
 
+            # Segment the song into syllables based on amplitude threshold (onsets and offsets of syllables)
             (onsets, offsets) = Song_functions.segment_song(amp, segment_params={'threshold': threshold, 'min_syl_dur': min_syl_dur, 'min_silent_dur': min_silent_dur}, samp_freq=fs)
         
             
             # Create a directory to save non-silent chunks
-            output_dir = os.path.join(os.path.dirname(file_path), f"{file_name}_NonSilentChunks")
+            output_dir = os.path.join(os.path.dirname(file_path), "Clean_Songs")
             os.makedirs(output_dir, exist_ok=True)
 
             # List to store non-silent chunks
