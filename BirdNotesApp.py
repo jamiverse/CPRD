@@ -333,11 +333,14 @@ class App(customtkinter.CTk):
         ax2.set_ylabel('Amplitude')
         ax2.set_xlabel('Time (s)')
 
-
         # Incorporer la figure dans le widget Canvas
         canvas = FigureCanvasTkAgg(fig, master=self.spectrogram_canvas)
         canvas.draw()
         canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+
+        #Ajouter la barre d'outils matplotlib (si besoin pour zoomer ect)
+        toolbar = NavigationToolbar2Tk(canvas, self.spectrogram_canvas)
+        toolbar.update()
 
         # Ajouter la ligne horizontale pour le seuil
         ax2.axhline(y=threshold, color='green')
