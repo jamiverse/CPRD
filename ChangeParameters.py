@@ -2,7 +2,7 @@ import tkinter as tk
 import customtkinter as ctk
 from tkinter import messagebox
 import json
-import BirdNotesApp
+import BirdSongApp
 
 class ChangeParamApp(ctk.CTk):
     def __init__(self, parameters_file):
