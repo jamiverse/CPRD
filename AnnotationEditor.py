@@ -20,9 +20,6 @@ class AnnotationEditor:
         self.text_area = tk.Text(self.root, height=20, width=50)
         self.text_area.pack(padx=10, pady=5)
         
-        self.plot_button = tk.Button(self.root, text="Plot Annotations", command=self.plot_annotations, state=tk.DISABLED)
-        self.plot_button.pack(pady=5)
-        
         self.root.mainloop()
     
     def load_annotations(self):
@@ -52,10 +49,6 @@ class AnnotationEditor:
             # Fermer la fenêtre
             self.root.destroy()
 
-    
-    def plot_annotations(self):
-        # Cette fonction nécessite une implémentation appropriée pour tracer les annotations
-        pass
 
 if __name__ == "__main__":
     root = tk.Tk()

@@ -76,7 +76,7 @@ class App(customtkinter.CTk):
         self.sidebar_frame.grid(row=0, column=0, rowspan=4, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
 
-        self.save_button = customtkinter.CTkButton(self.sidebar_frame, text="npy to wav", command=self.save_signal)
+        self.save_button = customtkinter.CTkButton(self.sidebar_frame, text="npy to wav", command=self.save_wav)
         self.save_button.grid(row=3, column=0, padx=(20, 20), pady=(10, 10), sticky="ew")
         
         #nom de l'interface
@@ -322,7 +322,7 @@ class App(customtkinter.CTk):
             tk.messagebox.showerror("Script Not Found", "Le script AnnotationEditor.py n'a pas été trouvé.")
 
     #fonction pour enregistrer le spectrogramme
-    def save_signal(self):
+    def save_wav(self):
         if not self.fetched_audio_file_path:
             messagebox.showerror("Aucun fichier audio", "Veuillez d'abord ouvrir un fichier audio.")
             return
@@ -461,9 +461,6 @@ class ConsoleRedirector:
     def write(self, text):
         # Écrire le texte dans le widget personnalisé
         self.textbox_widget.insert("end", text)
-
-    def flush(self):
-        pass
 
 if __name__ == "__main__":
     app = App()
