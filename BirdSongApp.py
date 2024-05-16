@@ -17,7 +17,7 @@ from pydub import AudioSegment
 import glob
 import shutil
 # Si Song_fucntions est dans le même dossier, sinon il faut modifier en import Song_functions from ""
-import Song_functions
+from songbird_data_analysis import Song_functions
 import ChangeParameters
 import subprocess
 import os
