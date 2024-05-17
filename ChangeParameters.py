@@ -44,7 +44,9 @@ class ChangeParamApp(ctk.CTk):
     def save_changes(self):
         for parameter, entry in self.parameter_entries.items():
             try:
-                if parameter != "songChannelName" and parameter != "rec_system" :
+                if entry.get() == "None" :
+                    value = None
+                elif parameter != "songChannelName" and parameter != "rec_system" :
                     value = float(entry.get())
                 else : 
                     value = str(entry.get())
