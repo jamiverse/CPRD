@@ -44,7 +44,10 @@ class ChangeParamApp(ctk.CTk):
     def save_changes(self):
         for parameter, entry in self.parameter_entries.items():
             try:
-                value = float(entry.get())
+                if parameter != "songChannelName" and parameter != "rec_system" :
+                    value = float(entry.get())
+                else : 
+                    value = str(entry.get())
                 self.parameters[parameter] = value
             except ValueError:
                 print(f"Invalid value for parameter '{parameter}': {entry.get()}")
