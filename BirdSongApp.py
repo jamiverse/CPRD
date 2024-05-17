@@ -1,3 +1,5 @@
+#Développé par Jade Goupil, Ceny Ketani, Céline Hosteins, Noé Mathieux 
+
 import tkinter as tk
 import tkinter.messagebox
 from tkinter import messagebox, filedialog
