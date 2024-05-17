@@ -194,7 +194,7 @@ class App(customtkinter.CTk):
             else:  # Assuming .npy file extension
                 audio_data = np.load(file_path)
 
-            # Check the recording system (imported from ) to determine the sampling frequency
+            # Check the recording system (imported from Song_functions) to determine the sampling frequency
             if rec_system == 'Alpha_omega':
                 fs = 22321.4283
             elif rec_system == 'Neuralynx':
@@ -203,33 +203,73 @@ class App(customtkinter.CTk):
                 fs = 32723.037368
 
             # Extract the amplitude of the audio signal
-            amp = Song_functions.smooth_data(self.audio_data, fs, freq_cutoffs=(1000, 8000))
+            amp = Song_functions.smooth_data(audio_data, fs, freq_cutoffs=(1000, 8000))
 
             # Segment the song into syllables based on amplitude threshold (onsets and offsets of syllables)
             (onsets, offsets) = Song_functions.segment_song(amp, segment_params={'threshold': threshold, 'min_syl_dur': min_syl_dur, 'min_silent_dur': min_silent_dur}, samp_freq=fs)
-        
-            
-            # Create a directory to save non-silent chunks
-            output_dir = os.path.join(os.path.dirname(file_path), "Clean_Songs")
-            os.makedirs(output_dir, exist_ok=True)
 
-            # List to store non-silent chunks
+            # Create directories to save non-silent chunks and silent segments
+            output_dir_clean = os.path.join(os.path.dirname(file_path), "Clean_Songs")
+            output_dir_silent = os.path.join(os.path.dirname(file_path), "No_Songs")
+            os.makedirs(output_dir_clean, exist_ok=True)
+            os.makedirs(output_dir_silent, exist_ok=True)
+
+            # List to store non-silent and silent chunks
             non_silent_chunks = []
+            silent_chunks = []
 
             # Iterate over the detected syllables and save non-silent chunks
+            previous_offset = 0
             for i, (onset, offset) in enumerate(zip(onsets, offsets)):
                 # Extract the non-silent chunk
                 non_silent_chunk = audio_data[onset:offset]
 
+                # Extract the silent chunk
+                silent_chunk = audio_data[previous_offset:onset]
+
                 # Add the non-silent chunk to the list
                 non_silent_chunks.append(non_silent_chunk)
 
+                # Add the silent chunk to the list (if it's not the initial silence)
+                if len(silent_chunk) > 0:
+                    silent_chunks.append(silent_chunk)
+
                 # Save the non-silent chunk as a new audio file
-                output_file_path = os.path.join(output_dir, f"NonSilentChunk_{i}.{file_extension[1:]}")
+                output_file_path_clean = os.path.join(output_dir_clean, f"NonSilentChunk_{i}.{file_extension[1:]}")
                 if file_extension == ".wav":
-                    wavfile.write(output_file_path, sample_rate, non_silent_chunk)
+                    wavfile.write(output_file_path_clean, sample_rate, non_silent_chunk)
                 else:
-                    np.save(output_file_path, non_silent_chunk)
+                    np.save(output_file_path_clean, non_silent_chunk)
+
+            
+
+                # Save the silent chunk as a new audio file (if it's not the initial silence)
+                if len(silent_chunk) > 0:
+                    output_file_path_silent = os.path.join(output_dir_silent, f"SilentChunk_{i}.{file_extension[1:]}")
+                    if file_extension == ".wav":
+                        wavfile.write(output_file_path_silent, sample_rate, silent_chunk)
+                    else:
+                        np.save(output_file_path_silent, silent_chunk)
+
+
+
+                # Update the previous offset
+                previous_offset = offset
+
+            print("Non-silent chunks saved at:", output_dir_clean)
+            print("Silent chunks saved at:", output_dir_silent)
+
+            # Handle the last silent chunk after the final offset
+            if previous_offset < len(audio_data):
+                silent_chunk = audio_data[previous_offset:]
+                silent_chunks.append(silent_chunk)
+                output_file_path_silent = os.path.join(output_dir_silent, f"SilentChunk_{len(onsets)}.{file_extension[1:]}")
+                if file_extension == ".wav":
+                    wavfile.write(output_file_path_silent, sample_rate, silent_chunk)
+                else:
+                    np.save(output_file_path_silent, silent_chunk)
+
+
 
             # Concatenate non-silent chunks into one audio segment
             concatenated_audio = AudioSegment.silent(duration=0)  # Start with silent audio segment
@@ -242,13 +282,13 @@ class App(customtkinter.CTk):
                 concatenated_audio += audio_segment
 
             # Save the concatenated audio as either a WAV or NPY file
-            output_file_path = os.path.join(os.path.dirname(file_path), f"{file_name}_clean.{file_extension[1:]}")
+            output_file_path_clean = os.path.join(os.path.dirname(file_path), f"{file_name}_clean.{file_extension[1:]}")
             if file_extension == ".wav":
-                concatenated_audio.export(output_file_path, format="wav")
-                print("Clean file stored at:", output_file_path)
+                concatenated_audio.export(output_file_path_clean, format="wav")
+                print("Clean file stored at:", output_file_path_clean)
             else:
-                np.save(output_file_path, np.concatenate(non_silent_chunks))
-                print("Clean file stored at:", output_file_path)
+                np.save(output_file_path_clean, np.concatenate(non_silent_chunks))
+                print("Clean file stored at:", output_file_path_clean)
         
     
     #fonction pour ajouter des annotations au boucle clic sur le spectrogramme (suivi d'un simple clic pour terminer l'annotation)
