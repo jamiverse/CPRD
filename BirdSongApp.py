@@ -11,13 +11,10 @@ from scipy.signal import spectrogram
 import numpy as np
 import os
 import json
-import pydub
 import sys
 from pydub import AudioSegment
-import glob
-import shutil
 # Si Song_fucntions est dans le même dossier, sinon il faut modifier en import Song_functions from ""
-from songbird_data_analysis import Song_functions
+import Song_functions
 import ChangeParameters
 import subprocess
 import os
