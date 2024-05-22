@@ -119,7 +119,7 @@ class App(customtkinter.CTk):
         self.low_frame.grid_columnconfigure(1, weight=1)
         
         #pr les annotations automatiques (hvc) (pas encore implémenté)
-        self.hvc_button = customtkinter.CTkButton(self.low_frame, text="HVC labelling", command=self.launch_manual_labelling)
+        self.hvc_button = customtkinter.CTkButton(self.low_frame, text="HCV labelling", command=self.launch_manual_labelling)
         self.hvc_button.grid(row=0, column=1, padx=(20, 10), pady=(10, 20), sticky="ew")
         #automatic_annotations_button = customtkinter.CTkOptionMenu(self.low_frame, values=["HVC"]) #mettre la commande
         #automatic_annotations_button.grid(row=0, column=1, padx=(20, 10), pady=(10, 20), sticky="ew")
