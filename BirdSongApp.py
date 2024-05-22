@@ -407,6 +407,8 @@ class App(customtkinter.CTk):
         self.spectrogram_canvas.grid(row=0, column=1, padx=(20, 10), pady=(20, 0), sticky="nsew")
         self.spectrogram_canvas.grid_columnconfigure(1, weight=1)
         self.spectrogram_canvas.update()
+
+        file_name = os.path.basename(file_path)
         
         if file_path.endswith('.npy'):
             # Chargez les données à partir du fichier npy
@@ -454,8 +456,8 @@ class App(customtkinter.CTk):
             ax2.axvline(x=onsets[i] * len(t) / x_amp[-1], alpha=0.2)
             ax2.axvline(x=offsets[i] * len(t) / x_amp[-1], color='r', alpha=0.2)
 
-        ax2.set_title('Smoothed Amplitude of the Song')
-        ax2.set_ylabel('Amplitude')
+        ax2.set_title(f'{file_name}')
+        ax2.set_ylabel('Smoothed amplitude')
         ax2.set_xlabel('Time (s)')
 
         # Incorporer la figure dans le widget Canvas
