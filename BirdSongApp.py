@@ -456,7 +456,7 @@ class App(customtkinter.CTk):
             ax2.axvline(x=onsets[i] * len(t) / x_amp[-1], alpha=0.2)
             ax2.axvline(x=offsets[i] * len(t) / x_amp[-1], color='r', alpha=0.2)
 
-        ax2.set_title(f'{file_name}')
+        ax2.set_title(f'Audio : {file_name}')
         ax2.set_ylabel('Smoothed amplitude')
         ax2.set_xlabel('Time (s)')
 
